@@ -1,0 +1,16 @@
+[[redirects]]
+  from = "/api/nvidia/*"
+  to = "https://integrate.api.nvidia.com/v1/:splat"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/cerebras/*"
+  to = "https://api.cerebras.ai/v1/:splat"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

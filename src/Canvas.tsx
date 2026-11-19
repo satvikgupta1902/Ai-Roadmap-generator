@@ -1,6 +1,5 @@
 import {
   ReactFlow,
-  // MiniMap,
   Controls,
   Background,
   type Node,
@@ -10,7 +9,6 @@ import {
   Panel,
 } from "@xyflow/react";
 
-import AnnotationNode from "./nodes/AnnotationNode";
 import CircleNode from "./nodes/CircleNode";
 import MainNode from "./nodes/MainNode";
 import InputNode from "./nodes/InputNode";
@@ -33,79 +31,77 @@ const Canvas = ({
   const nodeTypes = {
     start: InputNode,
     main: MainNode,
-    annotation: AnnotationNode,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     circle: (props: any) => (
       <CircleNode {...props} onSubtopicClick={onSubtopicClick} />
     ),
   };
 
-  const onInit = (reactFlowInstance: {
-    fitView: (arg0: {
-      nodes: { id: string }[];
-      duration: number;
-      padding: number;
-    }) => void;
-  }) => {
-    console.log("Canvas is ready!", reactFlowInstance);
-
-    reactFlowInstance.fitView({
-      nodes: [{ id: "1" }, { id: "anotation-node" }],
-      duration: 800,
-      padding: 2.5,
-    });
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const onInit = (reactFlowInstance: any) => {
+    setTimeout(() => {
+      reactFlowInstance.fitView({
+        padding: 0.18,
+        duration: 600,
+      });
+    }, 100);
   };
 
   return (
-    <div className="w-full h-screen relative">
+    <div className="w-full h-full relative">
       <ReactFlow
         nodes={nodes}
         edges={edges}
         attributionPosition="bottom-left"
         nodeTypes={nodeTypes}
-        minZoom={0.1}
+        minZoom={0.15}
         maxZoom={2}
         panOnScroll={true}
         defaultEdgeOptions={{
           style: {
-            strokeWidth: 12,
-            stroke: "#8b5cf6",
+            strokeWidth: 3,
+            stroke: "#0066FF",
           },
           markerEnd: {
             type: MarkerType.ArrowClosed,
-            color: "#8b5cf6",
-            width: 15,
-            height: 15,
+            color: "#0066FF",
+            width: 18,
+            height: 18,
           },
         }}
         proOptions={{ hideAttribution: true }}
         onInit={onInit}
       >
-        {/* <MiniMap
-          nodeStrokeWidth={3}
-          nodeClassName={nodeClassName}
-          className="bg-white border border-gray-200 rounded-lg shadow"
-        /> */}
+        <Controls className="!bg-white !border !border-slate-200 !shadow-lg !rounded-xl !overflow-hidden text-slate-700" />
 
-        <Controls />
+        <Background
+          variant={BackgroundVariant.Dots}
+          gap={28}
+          size={1.2}
+          color="#cbd5e1"
+          bgColor="#f8fafc"
+        />
 
-        <Background variant={BackgroundVariant.Lines} bgColor="#f0f0f0" />
-
-        <Panel position={"top-right"} className="bg-white p-4 rounded-xl">
-          <h3 className="font-semibold text-gray-900 mb-2 text-sm">Legend</h3>
-          <div className="space-y-1 text-xs">
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 bg-emerald-500 rounded-full"></div>
-              <span className="text-gray-700">Start Point</span>
+        <Panel position="top-right" className="bg-white/95 backdrop-blur-md p-4 rounded-2xl shadow-xl border border-slate-200 text-slate-800">
+          <h3 className="font-extrabold text-slate-900 mb-2.5 text-xs uppercase tracking-wider font-mono">
+            Flowchart Guide
+          </h3>
+          <div className="space-y-2 text-xs font-semibold">
+            <div className="flex items-center gap-2 text-slate-700">
+              <span className="w-3.5 h-3.5 bg-emerald-500 rounded-md shadow-xs"></span>
+              <span>Learning Goal (Start)</span>
             </div>
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 bg-violet-600 rounded"></div>
-              <span className="text-gray-700">Main Topics</span>
+            <div className="flex items-center gap-2 text-slate-700">
+              <span className="w-3.5 h-3.5 bg-[#0066FF] rounded-md shadow-xs"></span>
+              <span>Phase Milestones</span>
             </div>
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-              <span className="text-gray-700">Learning Steps</span>
+            <div className="flex items-center gap-2 text-slate-700">
+              <span className="w-3.5 h-3.5 bg-white border-2 border-blue-500 rounded-md shadow-xs"></span>
+              <span>Subtopics (Click to Expand)</span>
             </div>
+          </div>
+          <div className="mt-3 pt-2 border-t border-slate-100 text-[11px] text-blue-600 font-semibold">
+            💡 Click any card to expand hierarchy
           </div>
         </Panel>
       </ReactFlow>

@@ -1,174 +1,183 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { callGeminiAPI } from "./lib/gemini";
-import { account, databases } from "./lib/appwrite";
+import { generateRoadmapAI } from "./lib/ai";
+import { databases } from "./lib/appwrite";
 import { ID } from "appwrite";
-import LoginDialog from "./LoginDialog";
-import { useDispatch, useSelector } from "react-redux";
-import type { RootState } from "./store/store";
-import { login, logout, type User } from "./store/slices/authSlice";
 import { FaCheck, FaStar } from "react-icons/fa";
 import { BsInfoCircleFill } from "react-icons/bs";
 import { HiLightningBolt } from "react-icons/hi";
-import { IoReorderFour } from "react-icons/io5";
+import { IoReorderFour, IoSparkles } from "react-icons/io5";
 
 const HomePage = () => {
   const navigate = useNavigate();
-  const dispatch = useDispatch();
-
-  const user = useSelector((state: RootState) => state.auth.data);
 
   const [inputText, setInputText] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [showLoginDialog, setShowLoginDialog] = useState(false);
+  const [statusMessage, setStatusMessage] = useState("");
 
   const handleGenerate = async () => {
-    if (!inputText.trim()) return;
-
-    if (!user) {
-      setShowLoginDialog(true);
-      return;
-    }
+    const trimmed = inputText.trim();
+    if (!trimmed || isLoading) return;
 
     setIsLoading(true);
-    try {
-      console.log("Generating roadmap for:", inputText);
+    setStatusMessage("Generating your custom roadmap with AI...");
 
-      const result = await callGeminiAPI(inputText);
-      console.log("Gemini Response:", result);
+    try {
+      console.log("Generating roadmap for:", trimmed);
+
+      const { roadmap: result, modelUsed } = await generateRoadmapAI(trimmed);
+      console.log("Roadmap successfully generated using:", modelUsed);
 
       const documentData: Record<string, string> = {
-        prompt: inputText,
+        prompt: trimmed,
         data: JSON.stringify(result),
       };
 
-      // If user is logged in, associate the roadmap with their account
-      if (user) {
-        documentData.userId = user.$id;
-        documentData.userEmail = user.email;
+      let roadmapId = "";
+
+      if (
+        import.meta.env.VITE_APPWRITE_PROJECT_ID &&
+        import.meta.env.VITE_APPWRITE_ENDPOINT
+      ) {
+        try {
+          const response = await databases.createDocument(
+            "6874d2200030c6ec9e6f",
+            "6874d24a0021ae17ca60",
+            ID.unique(),
+            documentData
+          );
+          roadmapId = response.$id;
+        } catch (dbError) {
+          console.warn("Appwrite document creation skipped or failed:", dbError);
+        }
       }
 
-      const response = await databases.createDocument(
-        "6874d2200030c6ec9e6f",
-        "6874d24a0021ae17ca60",
-        ID.unique(),
-        documentData
-      );
+      if (!roadmapId) {
+        roadmapId = "roadmap_" + Date.now();
+      }
 
-      navigate(`/roadmap/${response.$id}`);
+      // Save locally to ensure roadmap is always available
+      const localRoadmap = {
+        $id: roadmapId,
+        prompt: trimmed,
+        data: JSON.stringify(result),
+        $createdAt: new Date().toISOString(),
+        modelUsed,
+      };
+
+      try {
+        const savedRoadmaps = JSON.parse(
+          localStorage.getItem("saved_roadmaps") || "[]"
+        );
+        savedRoadmaps.unshift(localRoadmap);
+        localStorage.setItem("saved_roadmaps", JSON.stringify(savedRoadmaps));
+        localStorage.setItem(`roadmap_${roadmapId}`, JSON.stringify(localRoadmap));
+      } catch (storageError) {
+        console.error("Failed to save roadmap to localStorage:", storageError);
+      }
+
+      navigate(`/roadmap/${roadmapId}`);
     } catch (error) {
-      console.error("Error generating roadmap:", error);
+      console.error("Error in handleGenerate:", error);
+      // Fallback navigation with timestamp ID
+      const fallbackId = "roadmap_" + Date.now();
+      navigate(`/roadmap/${fallbackId}`);
     } finally {
       setIsLoading(false);
+      setStatusMessage("");
     }
   };
 
   return (
-    <div className="min-h-screen bg-indigo-100 flex flex-col">
-      <LoginDialog
-        isOpen={showLoginDialog}
-        onClose={() => setShowLoginDialog(false)}
-        onLoginSuccess={(userData) => {
-          console.log("Login successful:", userData);
-          dispatch(login(userData as User));
-          setShowLoginDialog(false);
-        }}
-      />
-
-      <header className="px-6 py-4 border-b border-white/20 backdrop-blur-md bg-white/10">
+    <div className="min-h-screen bg-white text-slate-900 flex flex-col bg-grid-blueprint-light radial-ambient-blue-light selection:bg-blue-600 selection:text-white">
+      {/* Crisp White Header Bar */}
+      <header className="sticky top-0 z-50 px-6 py-4 border-b border-slate-200/80 backdrop-blur-md bg-white/90 shadow-xs">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <div className="text-xl font-bold text-gray-900">RoadmapAI</div>
+          <div
+            className="flex items-center gap-3 cursor-pointer group"
+            onClick={() => navigate("/")}
+          >
+            <img
+              src="/logo.png"
+              alt="AI Roadmap Logo"
+              className="h-9.5 w-auto object-contain drop-shadow-[0_2px_10px_rgba(0,102,255,0.25)] group-hover:scale-105 transition-transform"
+            />
+            <img
+              src="/wordart-dark.png"
+              alt="AI Roadmap"
+              className="h-5.5 sm:h-6 w-auto object-contain"
+            />
+          </div>
 
-          <div className="flex items-center gap-4">
-            {user ? (
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={() => navigate("/my-roadmaps")}
-                  className="cursor-pointer flex items-center gap-2 text-sm text-violet-600 hover:text-violet-700 font-medium bg-violet-50/80 hover:bg-violet-100/80 backdrop-blur-sm px-4 py-2 rounded-lg transition-all duration-200 border border-violet-200/50"
-                >
-                  My Roadmaps
-                </button>
-
-                <div className="flex items-center gap-3 bg-white/50 backdrop-blur-sm px-3 py-2 rounded-lg border border-gray-200/50">
-                  <div className="w-6 h-6 bg-purple-500 rounded-full flex items-center justify-center">
-                    <span className="text-white text-xs font-medium">
-                      {user.name?.charAt(0).toUpperCase()}
-                    </span>
-                  </div>
-                  <span className="text-sm text-gray-700 font-medium hidden sm:block">
-                    {user.name}
-                  </span>
-                </div>
-
-                <button
-                  onClick={async () => {
-                    await account.deleteSession("current");
-                    dispatch(logout());
-                  }}
-                  className="text-sm text-gray-600 hover:text-gray-900 font-medium bg-gray-50/80 hover:bg-gray-100/80 px-3 py-2 rounded-lg transition-all duration-200 border border-gray-200/50"
-                >
-                  Sign Out
-                </button>
-              </div>
-            ) : (
-              <button
-                onClick={() => setShowLoginDialog(true)}
-                className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
-              >
-                Sign In
-              </button>
-            )}
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => navigate("/my-roadmaps")}
+              className="cursor-pointer flex items-center gap-2 text-xs font-semibold text-slate-700 hover:text-blue-600 bg-slate-100/90 hover:bg-slate-200/80 backdrop-blur-sm px-5 py-2.5 rounded-full transition-all border border-slate-200/80 shadow-xs active:scale-95"
+            >
+              My Roadmaps
+            </button>
           </div>
         </div>
       </header>
 
-      <div className="flex-1 flex items-center justify-center px-6 py-8">
+      <div className="flex-1 flex items-center justify-center px-6 py-12 md:py-16">
         <div className="max-w-4xl w-full">
           <div className="text-center mb-12">
-            <div className="inline-flex items-center gap-3 bg-white/80 backdrop-blur-sm border border-violet-200 text-violet-700 px-6 py-3 rounded-full text-sm font-medium mb-8 shadow-lg">
-              <FaStar className="w-4 h-4" />
-              <span>Powered by AI</span>
+            {/* Pixel Art Logo Showcase */}
+            <div className="flex justify-center mb-6">
+              <div className="relative group">
+                <div className="absolute -inset-4 bg-blue-500/10 rounded-full blur-xl opacity-75 group-hover:opacity-100 transition duration-500"></div>
+                <img
+                  src="/logo.png"
+                  alt="AI Roadmap"
+                  className="relative w-24 sm:w-32 h-auto object-contain drop-shadow-[0_10px_25px_rgba(0,102,255,0.25)] transform group-hover:scale-105 transition-transform duration-300"
+                />
+              </div>
             </div>
 
-            <h1 className="text-4xl md:text-6xl font-black text-gray-900 mb-6 leading-tight">
+            <div className="inline-flex items-center gap-2 bg-blue-50 border border-blue-200/80 text-blue-700 px-5 py-2 rounded-full text-xs font-semibold mb-6 shadow-xs tracking-wide">
+              <IoSparkles className="w-4 h-4 text-blue-600" />
+              <span>AI-Powered Learning Paths</span>
+            </div>
+
+            <h1 className="text-4xl sm:text-5xl md:text-7xl font-extrabold text-slate-950 mb-6 leading-[1.12] tracking-tight">
               Create Learning{" "}
-              <span className="bg-gradient-to-r from-violet-600 via-purple-600 to-pink-500 bg-clip-text text-transparent">
+              <span className="bg-gradient-to-r from-blue-600 via-sky-600 to-indigo-600 bg-clip-text text-transparent">
                 Roadmaps
               </span>{" "}
               <br className="hidden md:block" />
               in Seconds
             </h1>
 
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed font-light mb-8">
-              Transform any learning goal into a structured, visual roadmap. Our
-              AI analyzes your objectives and creates a step-by-step plan with
-              clear milestones and actionable subtopics.
+            <p className="text-base sm:text-lg md:text-xl text-slate-600 max-w-3xl mx-auto leading-relaxed font-normal mb-8">
+              Transform any learning goal into a structured, visual roadmap with milestones,
+              prerequisites, and curated resources.
             </p>
 
-            <div className="flex items-center justify-center gap-6 text-sm text-gray-500 mb-2">
+            <div className="flex flex-wrap items-center justify-center gap-6 text-xs sm:text-sm text-slate-600 mb-2 font-medium">
               <div className="flex items-center gap-2">
-                <span className="w-2 h-2 bg-green-400 rounded-full"></span>
+                <span className="w-2 h-2 bg-emerald-500 rounded-full shadow-[0_0_8px_rgba(16,185,129,0.5)]"></span>
                 <span>Free to use</span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="w-2 h-2 bg-blue-400 rounded-full"></span>
+                <span className="w-2 h-2 bg-[#0066FF] rounded-full shadow-[0_0_8px_rgba(0,102,255,0.5)]"></span>
                 <span>No signup required</span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="w-2 h-2 bg-purple-400 rounded-full"></span>
-                <span>Instant results</span>
+                <span className="w-2 h-2 bg-sky-500 rounded-full shadow-[0_0_8px_rgba(14,165,233,0.5)]"></span>
+                <span>Instant visual charts</span>
               </div>
             </div>
           </div>
 
-          <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-2xl border border-gray-200/50 p-8 md:p-10 mb-16">
+          {/* Generator Input Card on White */}
+          <div className="bg-white rounded-3xl shadow-[0_15px_45px_rgba(0,0,0,0.06)] border border-slate-200/90 p-6 sm:p-8 md:p-10 mb-16">
             <div className="mb-6">
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">
+              <h2 className="text-xl sm:text-2xl font-bold text-slate-900 mb-1.5 tracking-tight">
                 Describe Your Learning Goal
               </h2>
-              <p className="text-gray-600">
-                Be specific about what you want to learn or achieve. The more
-                detail you provide, the better your roadmap will be.
+              <p className="text-slate-500 text-xs sm:text-sm">
+                Be specific about what you want to learn or achieve.
               </p>
             </div>
 
@@ -177,65 +186,53 @@ const HomePage = () => {
                 <textarea
                   value={inputText}
                   onChange={(e) => setInputText(e.target.value)}
-                  placeholder="Example: 'I want to become a full-stack web developer focusing on React and Node.js' or 'Create a roadmap to master data science with Python and machine learning'"
-                  className="w-full h-48 p-6 border-2 border-gray-200 rounded-2xl text-lg text-gray-800 resize-none outline-none transition-all duration-300 focus:border-violet-500 focus:ring-4 focus:ring-violet-500/10 bg-gray-50/50 placeholder-gray-400"
+                  placeholder="Example: 'Master Machine Learning with Python and PyTorch from scratch' or 'Full-stack Next.js and Cloudflare development roadmap'"
+                  className="w-full h-44 p-5 sm:p-6 border border-slate-200 rounded-2xl text-base md:text-lg text-slate-900 resize-none outline-none transition-all duration-300 focus:border-blue-600 focus:ring-4 focus:ring-blue-500/10 bg-slate-50/70 placeholder-slate-400 font-sans"
                   disabled={isLoading}
                 />
                 <div className="absolute bottom-4 right-4 flex items-center gap-3">
-                  <span className="text-sm text-gray-400">
+                  <span className="text-xs text-slate-400 font-mono">
                     {inputText.length}/1000 characters
                   </span>
-                  {inputText.length > 50 && (
-                    <div className="flex items-center gap-1 text-green-600">
-                      <FaCheck className="w-4 h-4 " />
-                      <span className="text-sm font-medium">Good detail</span>
+                  {inputText.length > 30 && (
+                    <div className="flex items-center gap-1 text-emerald-600 text-xs font-semibold">
+                      <FaCheck className="w-3.5 h-3.5" />
+                      <span>Good detail</span>
                     </div>
                   )}
                 </div>
               </div>
 
-              <div className="flex flex-col sm:flex-row gap-4 sm:items-center sm:justify-between pt-6 border-t border-gray-100">
-                <div className="flex items-center gap-4 text-sm text-gray-500">
-                  <div className="flex items-center gap-2">
-                    <BsInfoCircleFill className="w-4 h-4" />
-
-                    <span>Results in 10-30 seconds</span>
-                  </div>
+              <div className="flex flex-col sm:flex-row gap-4 sm:items-center sm:justify-between pt-4 border-t border-slate-100">
+                <div className="flex items-center gap-3 text-xs text-slate-500 font-medium">
+                  <BsInfoCircleFill className="w-4 h-4 text-blue-600 flex-shrink-0" />
+                  <span>
+                    {statusMessage || "Auto-fallback across preferred AI models"}
+                  </span>
                 </div>
 
-                {!user && (
-                  <p className="text-sm text-gray-500 text-center mt-3">
-                    <button
-                      onClick={() => setShowLoginDialog(true)}
-                      className="text-violet-600 hover:text-violet-700 font-medium"
-                    >
-                      Sign in
-                    </button>{" "}
-                    to save and track your roadmaps
-                  </p>
-                )}
-
                 <button
+                  type="button"
                   onClick={handleGenerate}
-                  disabled={inputText.trim().length < 3 || isLoading}
+                  disabled={inputText.trim().length === 0 || isLoading}
                   className={`
-                    flex items-center gap-3 px-8 py-4 rounded-2xl font-semibold text-lg transition-all duration-300 transform
+                    flex items-center justify-center gap-3 px-8 py-3.5 rounded-full font-semibold text-base transition-all duration-300 transform select-none cursor-pointer
                     ${
-                      inputText.trim().length > 3 && !isLoading
-                        ? "bg-purple-600 text-white hover:bg-violet-700 hover:scale-105 hover:shadow-2xl shadow-lg"
-                        : "bg-gray-200 text-gray-400 cursor-not-allowed"
+                      inputText.trim().length > 0 && !isLoading
+                        ? "bg-[#0066FF] text-white hover:bg-blue-700 hover:scale-[1.02] shadow-[0_4px_25px_rgba(0,102,255,0.35)] active:scale-95"
+                        : "bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200"
                     }
                   `}
                 >
                   {isLoading ? (
                     <>
-                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                      Generating Your Roadmap...
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      <span>Generating Your Roadmap...</span>
                     </>
                   ) : (
                     <>
                       <HiLightningBolt className="w-5 h-5" />
-                      Generate Roadmap
+                      <span>Generate Roadmap</span>
                     </>
                   )}
                 </button>
@@ -243,43 +240,41 @@ const HomePage = () => {
             </div>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-8">
-            <div className="group text-center p-8 bg-white/40 backdrop-blur-sm rounded-3xl border border-gray-200/50 hover:bg-white/60 transition-all duration-300 hover:scale-105 hover:shadow-xl">
-              <div className="w-16 h-16 bg-purple-500 rounded-3xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300">
-                <HiLightningBolt className="w-8 h-8 text-white" />
+          {/* 3 Feature Cards */}
+          <div className="grid md:grid-cols-3 gap-6 sm:gap-8">
+            <div className="group text-left p-7 sm:p-8 bg-white rounded-3xl border border-slate-200/90 shadow-[0_10px_30px_rgba(0,0,0,0.04)] hover:shadow-[0_15px_40px_rgba(0,102,255,0.1)] hover:border-blue-300 transition-all duration-300 hover:-translate-y-1">
+              <div className="w-13 h-13 bg-blue-50 border border-blue-200 rounded-2xl flex items-center justify-center mb-6 text-blue-600 shadow-xs group-hover:scale-105 transition-transform">
+                <HiLightningBolt className="w-6 h-6 text-blue-600" />
               </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-3">
-                Lightning Fast Generation
+              <h3 className="text-lg sm:text-xl font-bold text-slate-950 mb-2.5 tracking-tight">
+                Intelligent Fallback
               </h3>
-              <p className="text-gray-600 leading-relaxed">
-                Get comprehensive, structured roadmaps in under 30 seconds. Our
-                AI processes your goals instantly and delivers actionable plans.
+              <p className="text-slate-600 leading-relaxed text-xs sm:text-sm">
+                Runs your preferred models with seamless automatic fallback.
               </p>
             </div>
 
-            <div className="group text-center p-8 bg-white/40 backdrop-blur-sm rounded-3xl border border-gray-200/50 hover:bg-white/60 transition-all duration-300 hover:scale-105 hover:shadow-xl">
-              <div className="w-16 h-16 bg-cyan-500 rounded-3xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300">
-                <IoReorderFour className="w-8 h-8 text-white" />
+            <div className="group text-left p-7 sm:p-8 bg-white rounded-3xl border border-slate-200/90 shadow-[0_10px_30px_rgba(0,0,0,0.04)] hover:shadow-[0_15px_40px_rgba(0,102,255,0.1)] hover:border-blue-300 transition-all duration-300 hover:-translate-y-1">
+              <div className="w-13 h-13 bg-sky-50 border border-sky-200 rounded-2xl flex items-center justify-center mb-6 text-sky-600 shadow-xs group-hover:scale-105 transition-transform">
+                <IoReorderFour className="w-6 h-6 text-sky-600" />
               </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-3">
+              <h3 className="text-lg sm:text-xl font-bold text-slate-950 mb-2.5 tracking-tight">
                 Structured & Visual
               </h3>
-              <p className="text-gray-600 leading-relaxed">
-                Beautiful, interactive flow charts that break down complex
-                topics into manageable steps and clear learning paths.
+              <p className="text-slate-600 leading-relaxed text-xs sm:text-sm">
+                Interactive graph flows with clickable subtopics, code examples, and study timelines.
               </p>
             </div>
 
-            <div className="group text-center p-8 bg-white/40 backdrop-blur-sm rounded-3xl border border-gray-200/50 hover:bg-white/60 transition-all duration-300 hover:scale-105 hover:shadow-xl">
-              <div className="w-16 h-16 bg-green-500 rounded-3xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300">
-                <FaStar className="w-8 h-8 text-white" />
+            <div className="group text-left p-7 sm:p-8 bg-white rounded-3xl border border-slate-200/90 shadow-[0_10px_30px_rgba(0,0,0,0.04)] hover:shadow-[0_15px_40px_rgba(0,102,255,0.1)] hover:border-blue-300 transition-all duration-300 hover:-translate-y-1">
+              <div className="w-13 h-13 bg-emerald-50 border border-emerald-200 rounded-2xl flex items-center justify-center mb-6 text-emerald-600 shadow-xs group-hover:scale-105 transition-transform">
+                <FaStar className="w-6 h-6 text-emerald-600" />
               </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-3">
-                AI-Powered Intelligence
+              <h3 className="text-lg sm:text-xl font-bold text-slate-950 mb-2.5 tracking-tight">
+                Interactive Tutor
               </h3>
-              <p className="text-gray-600 leading-relaxed">
-                Powered by Google's Gemini AI for intelligent topic analysis,
-                logical sequencing, and personalized learning recommendations.
+              <p className="text-slate-600 leading-relaxed text-xs sm:text-sm">
+                Chat assistant ready to answer questions, explain concepts, and suggest tutorials.
               </p>
             </div>
           </div>

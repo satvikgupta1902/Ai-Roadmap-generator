@@ -5,6 +5,7 @@ import Canvas from "./Canvas";
 import { databases } from "./lib/appwrite";
 import { useParams, useNavigate } from "react-router-dom";
 import LearningPanel from "./LearningPanel";
+import TopicPopoutModal from "./TopicPopoutModal";
 import { IoIosArrowBack } from "react-icons/io";
 import { FaDesktop } from "react-icons/fa6";
 
@@ -12,6 +13,7 @@ export interface Subtopic {
   title: string;
   description: string;
   practicalExample: string;
+  keyTopics?: string[];
 }
 
 interface RoadmapNode {
@@ -41,119 +43,143 @@ const OverviewFlow = () => {
   const [selectedSubtopic, setSelectedSubtopic] = useState<Subtopic | null>(
     null
   );
+  const [popoutSubtopic, setPopoutSubtopic] = useState<Subtopic | null>(null);
+  const [popoutStepNumber, setPopoutStepNumber] = useState<string>("");
+  const [popoutPhaseTitle, setPopoutPhaseTitle] = useState<string>("");
   const [activeTab, setActiveTab] = useState<string>("chat");
 
-  const handleSubtopicClick = (subtopic: Subtopic) => {
+  const handleSubtopicClick = (subtopic: any) => {
     setSelectedSubtopic(subtopic);
-    // setActiveTab("details");
+    setPopoutSubtopic(subtopic);
+    setPopoutStepNumber(subtopic.stepNumber || "");
+    setPopoutPhaseTitle(subtopic.phaseTitle || "");
+    setActiveTab("details");
   };
 
   const generateNodeEdges = (data: RoadmapData): void => {
-    const nodes: Node[] = [
-      {
-        id: "anotation-node",
-        type: "annotation",
-        selectable: false,
-        data: {
-          label: data.title,
-          level: 0,
-          arrowStyle: {
-            right: "50%",
-            bottom: "-30%",
-          },
-        },
-        position: { x: -100, y: -350 },
-      },
-    ];
+    const nodes: Node[] = [];
     const edges: Edge[] = [];
-    let nodeIdCounter = 0;
 
-    const config = {
-      startY: 0,
-      mainNodeSpacingY: 0,
-      mainNodeX: 0,
-      subtopicX: 600,
-      subtopicSpacingY: 150,
-      minSubtopicSpacing: 0,
-    };
+    // Cleaned Roadmap Title
+    const cleanTitle = (data.title || "Learning Roadmap")
+      .replace(/^["'\s]+|["'\s]+$/g, "")
+      .replace(/^(create\s+a\s+roadmap\s+for|roadmap\s+for)\s*/i, "");
 
-    // Start node
-    const startNodeId = nodeIdCounter++;
+    // 1. Sleek Goal/Start Node at top
+    const startNodeId = "start-goal-node";
     nodes.push({
-      id: startNodeId.toString(),
+      id: startNodeId,
       type: "start",
-      data: { label: data.title },
-      position: { y: -150, x: 0 },
+      data: {
+        label: cleanTitle,
+        duration: data.estimatedDuration,
+        level: data.difficultyLevel,
+      },
+      position: { x: -210, y: -240 },
     });
 
-    let currentMainY = config.startY + config.mainNodeSpacingY;
-    let globalSubtopicY = config.startY + 100;
+    let currentY = 10;
+    let previousMainNodeId = startNodeId;
 
     data.nodes.forEach((mainTopic, mainIndex) => {
-      const mainNodeId = nodeIdCounter++;
-
-      // Calculate space
+      const mainNodeId = `main-node-${mainIndex + 1}`;
+      const isRightSide = mainIndex % 2 === 0; // alternate right and left branches for balanced diagram
       const subtopicCount = mainTopic.subtopics.length;
-      const requiredWidth = (subtopicCount - 1) * config.subtopicSpacingY;
+      // Vertical spacing between subtopics inside a phase
+      const subtopicSpacingY = 260;
 
-      const mainNodeY = currentMainY + requiredWidth / 2 - 100;
+      // Main Milestone Node vertically centered alongside its subtopics
+      const mainNodeY =
+        subtopicCount > 1
+          ? currentY + ((subtopicCount - 1) * subtopicSpacingY) / 2
+          : currentY;
 
       nodes.push({
-        id: mainNodeId.toString(),
+        id: mainNodeId,
         type: "main",
-        position: { y: mainNodeY, x: config.mainNodeX },
+        position: { x: -190, y: mainNodeY },
         data: {
           label: mainTopic.title,
+          order: mainIndex + 1,
           duration: mainTopic.duration,
           prerequisite: mainTopic.prerequisite,
-          isRight: mainNodeId % 2 !== 0,
+          subtopicCount: subtopicCount,
+          isRight: isRightSide,
         },
       });
 
-      const sourceNodeId = mainIndex === 0 ? startNodeId : nodeIdCounter - 2;
+      // Spine edge from previous node to this main phase node
       edges.push({
-        id: `main-edge-${mainNodeId}`,
-        source: sourceNodeId.toString(),
-        target: mainNodeId.toString(),
-        sourceHandle: mainIndex === 0 ? undefined : "b",
+        id: `spine-edge-${mainIndex}`,
+        source: previousMainNodeId,
+        target: mainNodeId,
+        sourceHandle: mainIndex === 0 ? "1" : "b",
         targetHandle: "a",
-        style: { stroke: "#8b5cf6", strokeWidth: 2 },
-        markerEnd: { type: MarkerType.ArrowClosed },
+        type: "smoothstep",
+        style: { stroke: "#0066FF", strokeWidth: 4 },
+        markerEnd: {
+          type: MarkerType.ArrowClosed,
+          color: "#0066FF",
+          width: 20,
+          height: 20,
+        },
       });
 
-      // subtopics
-      const subtopicStartY = -config.subtopicSpacingY / 2 + mainNodeY - 100;
-      mainTopic.subtopics.forEach((subtopic, subtopicIndex) => {
-        const subtopicNodeId = `${mainNodeId}-sub-${subtopicIndex}`;
-        const subtopicY =
-          subtopicStartY + subtopicIndex * config.subtopicSpacingY;
+      previousMainNodeId = mainNodeId;
+
+      // Subtopic Nodes for this phase (enlarged 360px cards)
+      const subtopicBranchX = isRightSide ? 320 : -680;
+
+      mainTopic.subtopics.forEach((subtopic, subIndex) => {
+        const subtopicNodeId = `sub-${mainIndex + 1}-${subIndex + 1}`;
+        const subtopicY = currentY + subIndex * subtopicSpacingY;
 
         nodes.push({
           id: subtopicNodeId,
           type: "circle",
           position: {
-            x: mainNodeId % 2 !== 0 ? config.subtopicX : -config.subtopicX,
+            x: subtopicBranchX,
             y: subtopicY,
           },
           data: {
             title: subtopic.title,
             description: subtopic.description,
             practicalExample: subtopic.practicalExample,
+            keyTopics: (subtopic as any).keyTopics,
+            specificTarget: (subtopic as any).specificTarget,
+            phaseTitle: mainTopic.title,
+            stepNumber: `Step ${mainIndex + 1}.${subIndex + 1}`,
+            isRightBranch: isRightSide,
           },
         });
 
+        // Connector edge from main phase to subtopic
         edges.push({
-          id: `subtopic-edge-${subtopicNodeId}`,
-          source: mainNodeId.toString(),
+          id: `branch-edge-${subtopicNodeId}`,
+          source: mainNodeId,
           target: subtopicNodeId,
           sourceHandle: "c",
+          type: "smoothstep",
           animated: true,
-          style: { stroke: "#3b82f6", strokeWidth: 2 },
+          style: {
+            stroke: isRightSide ? "#0066FF" : "#38bdf8",
+            strokeWidth: 3,
+          },
+          markerEnd: {
+            type: MarkerType.ArrowClosed,
+            color: isRightSide ? "#0066FF" : "#38bdf8",
+            width: 16,
+            height: 16,
+          },
         });
       });
 
-      currentMainY += requiredWidth + config.mainNodeSpacingY;
-      globalSubtopicY = Math.max(globalSubtopicY, currentMainY);
+      // Advance Y position with 30% more reduction between phases
+      const phaseHeight =
+        subtopicCount > 1
+          ? (subtopicCount - 1) * subtopicSpacingY + 140
+          : 155;
+      currentY += phaseHeight + 35;
     });
 
     setNodes(nodes);
@@ -162,33 +188,69 @@ const OverviewFlow = () => {
 
   useEffect(() => {
     (async () => {
-      const response = await databases.getDocument(
-        "6874d2200030c6ec9e6f",
-        "6874d24a0021ae17ca60",
-        roadmapId!
-      );
+      if (!roadmapId) return;
 
-      const data = (await JSON.parse(response.data)) as unknown as RoadmapData;
-      setNodes([]);
-      setEdges([]);
+      try {
+        // First check localStorage
+        const localItem = localStorage.getItem(`roadmap_${roadmapId}`);
+        if (localItem) {
+          const parsed = JSON.parse(localItem);
+          const roadmapData = (typeof parsed.data === "string" ? JSON.parse(parsed.data) : parsed.data) as RoadmapData;
+          setNodes([]);
+          setEdges([]);
+          setData(roadmapData);
+          generateNodeEdges(roadmapData);
+          document.title = roadmapData.title;
+          return;
+        }
 
-      setData(data);
-      generateNodeEdges(data);
-      document.title = data.title;
+        const savedList = JSON.parse(localStorage.getItem("saved_roadmaps") || "[]");
+        const found = savedList.find((r: { $id: string }) => r.$id === roadmapId);
+        if (found) {
+          const roadmapData = (typeof found.data === "string" ? JSON.parse(found.data) : found.data) as RoadmapData;
+          setNodes([]);
+          setEdges([]);
+          setData(roadmapData);
+          generateNodeEdges(roadmapData);
+          document.title = roadmapData.title;
+          return;
+        }
+
+        if (
+          import.meta.env.VITE_APPWRITE_PROJECT_ID &&
+          import.meta.env.VITE_APPWRITE_ENDPOINT
+        ) {
+          const response = await databases.getDocument(
+            "6874d2200030c6ec9e6f",
+            "6874d24a0021ae17ca60",
+            roadmapId
+          );
+
+          const data = (await JSON.parse(response.data)) as unknown as RoadmapData;
+          setNodes([]);
+          setEdges([]);
+
+          setData(data);
+          generateNodeEdges(data);
+          document.title = data.title;
+        }
+      } catch (error) {
+        console.error("Error loading roadmap:", error);
+      }
     })();
   }, [roadmapId]);
 
   if (!data) {
     return (
-      <div className="min-h-screen bg-indigo-100 flex items-center justify-center">
-        <div className="text-center p-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-violet-100 rounded-full mb-6">
-            <div className="w-8 h-8 border-3 border-violet-600 border-t-transparent rounded-full animate-spin"></div>
+      <div className="min-h-screen bg-white text-slate-900 flex items-center justify-center bg-grid-blueprint-light radial-ambient-blue-light">
+        <div className="text-center p-8 bg-white border border-slate-200 rounded-3xl shadow-xl max-w-md mx-auto">
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-50 border border-blue-200 rounded-2xl mb-6">
+            <div className="w-8 h-8 border-3 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
           </div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-4">
+          <h1 className="text-2xl font-bold text-slate-900 mb-3 tracking-tight">
             Loading Your Roadmap
           </h1>
-          <p className="text-gray-600 text-lg">
+          <p className="text-slate-500 text-sm leading-relaxed">
             Preparing your personalized learning journey...
           </p>
         </div>
@@ -197,20 +259,20 @@ const OverviewFlow = () => {
   }
 
   return (
-    <div className="h-screen bg-indigo-100 flex flex-col">
+    <div className="h-screen bg-white text-slate-900 flex flex-col font-sans selection:bg-blue-600 selection:text-white">
       {/* Small Screen */}
-      <div className="lg:hidden min-h-screen bg-indigo-100 flex items-center justify-center p-6">
-        <div className="text-center max-w-md mx-auto">
-          <div className="inline-flex items-center justify-center w-20 h-20 mb-6">
-            <FaDesktop className="w-10 h-10 text-violet-600" />
+      <div className="lg:hidden min-h-screen bg-white text-slate-900 flex items-center justify-center p-6 bg-grid-blueprint-light">
+        <div className="text-center max-w-md mx-auto bg-white border border-slate-200 p-8 rounded-3xl shadow-xl">
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-50 border border-blue-200 rounded-2xl mb-6">
+            <FaDesktop className="w-8 h-8 text-blue-600" />
           </div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">
+          <h1 className="text-2xl font-bold text-slate-900 mb-3 tracking-tight">
             Desktop Required
           </h1>
 
           <button
             onClick={() => navigate(-1)}
-            className="mt-6 inline-flex items-center gap-2 px-6 py-3 bg-violet-600 text-white rounded-lg hover:bg-violet-700 transition-colors font-medium"
+            className="mt-6 inline-flex items-center gap-2 px-6 py-3 bg-[#0066FF] hover:bg-blue-700 text-white rounded-full transition-all font-semibold text-sm shadow-md cursor-pointer"
           >
             <IoIosArrowBack className="w-4 h-4" />
             Go Back
@@ -220,22 +282,39 @@ const OverviewFlow = () => {
 
       <div className="hidden lg:flex flex-1 overflow-hidden">
         {/* Left Sidebar */}
-        <div className="w-1/4 min-w-[300px] max-w-[400px] bg-white/80 backdrop-blur-sm border-r border-gray-200/50 flex flex-col overflow-scroll">
-          <div className="p-4 border-b border-gray-200/50 flex-shrink-0">
+        <div className="w-1/4 min-w-[300px] max-w-[400px] bg-white border-r border-slate-200 flex flex-col overflow-scroll text-slate-900">
+          <div className="p-5 border-b border-slate-200 flex-shrink-0">
+            {/* Header Brand */}
+            <div
+              className="flex items-center gap-2.5 pb-4 mb-4 border-b border-slate-200 cursor-pointer group"
+              onClick={() => navigate("/")}
+            >
+              <img
+                src="/logo.png"
+                alt="AI Roadmap Logo"
+                className="h-7 w-auto object-contain drop-shadow-[0_2px_8px_rgba(0,102,255,0.25)] group-hover:scale-105 transition-transform"
+              />
+              <img
+                src="/wordart-dark.png"
+                alt="AI Roadmap"
+                className="h-4.5 w-auto object-contain"
+              />
+            </div>
+
             <button
               onClick={() => navigate(-1)}
-              className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-4 transition-colors"
+              className="flex items-center gap-2 text-slate-600 hover:text-slate-900 mb-4 transition-colors text-xs font-semibold bg-slate-100 hover:bg-slate-200/80 px-3.5 py-1.5 rounded-full border border-slate-200 w-fit cursor-pointer"
             >
-              <IoIosArrowBack className="w-5 h-5" />
+              <IoIosArrowBack className="w-4 h-4" />
               <span className="text-sm font-medium">Back</span>
             </button>
 
-            <h1 className="text-2xl font-bold text-gray-900 mb-2 leading-tight">
+            <h1 className="text-2xl font-black text-slate-950 mb-2 leading-tight tracking-tight">
               {data.title}
             </h1>
 
             {data.description && (
-              <p className="text-sm text-gray-600 mb-4 leading-relaxed">
+              <p className="text-xs text-slate-600 mb-4 leading-relaxed font-normal">
                 {data.description}
               </p>
             )}
@@ -243,12 +322,12 @@ const OverviewFlow = () => {
             {data.difficultyLevel && (
               <div className="mb-4">
                 <span
-                  className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                  className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold border ${
                     data.difficultyLevel.toLowerCase() === "beginner"
-                      ? "bg-green-100 text-green-800"
+                      ? "bg-emerald-50 text-emerald-800 border-emerald-200"
                       : data.difficultyLevel.toLowerCase() === "intermediate"
-                      ? "bg-yellow-100 text-yellow-800"
-                      : "bg-red-100 text-red-800"
+                      ? "bg-blue-50 text-blue-800 border-blue-200"
+                      : "bg-rose-50 text-rose-800 border-rose-200"
                   }`}
                 >
                   {data.difficultyLevel}
@@ -256,16 +335,16 @@ const OverviewFlow = () => {
               </div>
             )}
 
-            <div className="space-y-3">
-              <div className="flex items-center gap-2 text-sm">
-                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                <span className="text-gray-600">
+            <div className="space-y-2.5 pt-2">
+              <div className="flex items-center gap-2 text-xs font-medium text-slate-600">
+                <div className="w-2 h-2 bg-[#0066FF] rounded-full shadow-[0_0_6px_rgba(0,102,255,0.4)]"></div>
+                <span>
                   {data.nodes.length} Main Topics
                 </span>
               </div>
-              <div className="flex items-center gap-2 text-sm">
-                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                <span className="text-gray-600">
+              <div className="flex items-center gap-2 text-xs font-medium text-slate-600">
+                <div className="w-2 h-2 bg-emerald-500 rounded-full shadow-[0_0_6px_rgba(16,185,129,0.4)]"></div>
+                <span>
                   {data.nodes.reduce(
                     (acc, node) => acc + node.subtopics.length,
                     0
@@ -274,9 +353,9 @@ const OverviewFlow = () => {
                 </span>
               </div>
               {data.estimatedDuration && (
-                <div className="flex items-center gap-2 text-sm">
-                  <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
-                  <span className="text-gray-600">
+                <div className="flex items-center gap-2 text-xs font-medium text-slate-600">
+                  <div className="w-2 h-2 bg-sky-500 rounded-full shadow-[0_0_6px_rgba(14,165,233,0.4)]"></div>
+                  <span>
                     {data.estimatedDuration}
                   </span>
                 </div>
@@ -284,34 +363,34 @@ const OverviewFlow = () => {
             </div>
           </div>
 
-          <div className="flex-1 p-4">
-            <h3 className="text-sm font-semibold text-gray-900 mb-3 uppercase tracking-wide">
+          <div className="flex-1 p-5">
+            <h3 className="text-xs font-bold text-slate-500 mb-3.5 uppercase tracking-wider font-mono">
               Learning Path
             </h3>
             <div className="space-y-3">
               {data.nodes.map((node, index) => (
                 <div
                   key={index}
-                  className="p-4 0 rounded-xl transition-all border border-gray-200"
+                  className="p-4 rounded-2xl transition-all border border-slate-200 bg-slate-50/70 hover:bg-white hover:border-blue-300 hover:shadow-xs shadow-xs"
                 >
                   <div className="flex items-start justify-between mb-2">
-                    <div className="font-semibold text-sm text-gray-900 leading-tight">
+                    <div className="font-bold text-sm text-slate-900 leading-tight">
                       {index + 1}. {node.title}
                     </div>
 
                     {node.duration && (
-                      <span className="text-xs text-blue-600 bg-blue-100 px-2 py-1 rounded-full font-medium">
+                      <span className="text-[11px] text-blue-700 bg-blue-50 border border-blue-200 px-2.5 py-0.5 rounded-full font-semibold">
                         {node.duration}
                       </span>
                     )}
                   </div>
 
-                  <div className="text-xs text-gray-600 mb-2">
+                  <div className="text-xs text-slate-500 mb-2">
                     {node.subtopics.length} subtopics
                   </div>
 
                   {node.prerequisite && (
-                    <div className="text-xs text-orange-600 bg-orange-50 px-2 py-1 rounded font-medium">
+                    <div className="text-xs text-amber-800 bg-amber-50 border border-amber-200 px-2.5 py-1 rounded-xl font-medium">
                       Prerequisite: {node.prerequisite}
                     </div>
                   )}
@@ -322,7 +401,7 @@ const OverviewFlow = () => {
         </div>
 
         {/* canvas */}
-        <div className="flex-1 border-r-2 border-l-2 border-gray-400 bg-white/50 backdrop-blur-sm">
+        <div className="flex-1 border-r border-l border-slate-200 bg-[#F8FAFC] relative overflow-hidden">
           <Canvas
             nodes={nodes}
             edges={edges}
@@ -331,7 +410,7 @@ const OverviewFlow = () => {
         </div>
 
         {/* Right Sidebar */}
-        <div className="w-1/3 min-w-[350px] max-w-[450px] bg-white/80 backdrop-blur-sm flex flex-col h-full overflow-hidden">
+        <div className="w-1/3 min-w-[350px] max-w-[450px] bg-white border-l border-slate-200 flex flex-col h-full overflow-hidden text-slate-900">
           <LearningPanel
             activeTab={activeTab}
             setActiveTab={setActiveTab}
@@ -340,6 +419,18 @@ const OverviewFlow = () => {
           />
         </div>
       </div>
+
+      {/* Floating Popout Hierarchy Modal */}
+      <TopicPopoutModal
+        subtopic={popoutSubtopic}
+        stepNumber={popoutStepNumber}
+        phaseTitle={popoutPhaseTitle}
+        onClose={() => setPopoutSubtopic(null)}
+        onOpenChat={(sub) => {
+          setSelectedSubtopic(sub);
+          setActiveTab("chat");
+        }}
+      />
     </div>
   );
 };
