@@ -4,11 +4,12 @@ import { useState, useRef, useEffect } from "react";
 import { sendChatMessageAI } from "./lib/ai";
 import type { Subtopic } from "./App";
 import { marked } from "marked";
-import { IoChatbubbleEllipsesSharp, IoSparkles } from "react-icons/io5";
+import { IoChatbubbleEllipsesSharp, IoSparkles, IoOpenOutline } from "react-icons/io5";
 import { BsInfoCircleFill } from "react-icons/bs";
 import { HiLightningBolt, HiReply } from "react-icons/hi";
 import { FaArrowRight } from "react-icons/fa";
-import { FaBullseye } from "react-icons/fa6";
+import { FaBullseye, FaRoute } from "react-icons/fa6";
+import { getPracticeDirections } from "./lib/practiceResources";
 
 interface Message {
   id: string;
@@ -226,7 +227,7 @@ GUIDELINES:
                 {messages.map((message) => (
                   <div
                     key={message.id}
-                    className={`flex ${
+                    className={`animate-slide-up flex ${
                       message.sender === "user"
                         ? "justify-end"
                         : "justify-start"
@@ -409,6 +410,47 @@ GUIDELINES:
                   </div>
                 </div>
               )}
+
+              {/* Practice Direction & Resources */}
+              {(() => {
+                const practice = getPracticeDirections(
+                  selectedSubtopic.title,
+                  selectedSubtopic.description,
+                  (selectedSubtopic as any).specificTarget
+                );
+                return (
+                  <div className="p-4 bg-gradient-to-br from-blue-50/80 to-sky-50/50 border border-blue-200/90 rounded-2xl shadow-xs">
+                    <div className="flex items-center justify-between gap-1 mb-2">
+                      <div className="flex items-center gap-1.5 text-xs font-bold text-blue-900">
+                        <FaRoute className="w-3.5 h-3.5 text-blue-600" />
+                        <span>Where to Practice</span>
+                      </div>
+                      <span className="text-[10px] font-bold bg-blue-100 text-blue-800 px-2.5 py-0.5 rounded-full border border-blue-200">
+                        {practice.platformBadge}
+                      </span>
+                    </div>
+
+                    <p className="text-xs text-slate-800 leading-relaxed font-semibold mb-3">
+                      {practice.directionText}
+                    </p>
+
+                    <div className="space-y-1.5">
+                      {practice.resources.slice(0, 3).map((res, i) => (
+                        <a
+                          key={i}
+                          href={res.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center justify-between p-2.5 bg-white rounded-xl border border-slate-200 hover:border-blue-500 text-xs text-blue-600 hover:text-blue-800 font-bold transition-all shadow-xs"
+                        >
+                          <span className="truncate">{res.label}</span>
+                          <IoOpenOutline className="w-3.5 h-3.5 flex-shrink-0" />
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })()}
 
               <button
                 type="button"

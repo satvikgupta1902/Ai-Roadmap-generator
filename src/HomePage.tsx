@@ -122,15 +122,16 @@ const HomePage = () => {
 
       <div className="flex-1 flex items-center justify-center px-6 py-12 md:py-16">
         <div className="max-w-4xl w-full">
-          <div className="text-center mb-12">
-            {/* Pixel Art Logo Showcase */}
+          <div className="text-center mb-12 animate-slide-up">
+            {/* Pixel Art Logo Showcase with Tech Orbit Ring */}
             <div className="flex justify-center mb-6">
-              <div className="relative group">
-                <div className="absolute -inset-4 bg-blue-500/10 rounded-full blur-xl opacity-75 group-hover:opacity-100 transition duration-500"></div>
+              <div className="relative group animate-float p-3">
+                <div className="absolute inset-0 rounded-full border-2 border-dashed border-blue-400/35 animate-spin-slow pointer-events-none"></div>
+                <div className="absolute -inset-4 bg-blue-500/12 rounded-full blur-xl opacity-75 group-hover:opacity-100 transition duration-500"></div>
                 <img
                   src="/logo.png"
                   alt="AI Roadmap"
-                  className="relative w-24 sm:w-32 h-auto object-contain drop-shadow-[0_10px_25px_rgba(0,102,255,0.25)] transform group-hover:scale-105 transition-transform duration-300"
+                  className="relative w-24 sm:w-32 h-auto object-contain drop-shadow-[0_10px_25px_rgba(0,102,255,0.28)] transform group-hover:scale-110 transition-transform duration-300"
                 />
               </div>
             </div>
@@ -156,22 +157,34 @@ const HomePage = () => {
 
             <div className="flex flex-wrap items-center justify-center gap-6 text-xs sm:text-sm text-slate-600 mb-2 font-medium">
               <div className="flex items-center gap-2">
-                <span className="w-2 h-2 bg-emerald-500 rounded-full shadow-[0_0_8px_rgba(16,185,129,0.5)]"></span>
+                <span className="relative flex h-2.5 w-2.5">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+                </span>
                 <span>Free to use</span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="w-2 h-2 bg-[#0066FF] rounded-full shadow-[0_0_8px_rgba(0,102,255,0.5)]"></span>
+                <span className="relative flex h-2.5 w-2.5">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#0066FF]"></span>
+                </span>
                 <span>No signup required</span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="w-2 h-2 bg-sky-500 rounded-full shadow-[0_0_8px_rgba(14,165,233,0.5)]"></span>
+                <span className="relative flex h-2.5 w-2.5">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-sky-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-sky-500"></span>
+                </span>
                 <span>Instant visual charts</span>
               </div>
             </div>
           </div>
 
-          {/* Generator Input Card on White */}
-          <div className="bg-white rounded-3xl shadow-[0_15px_45px_rgba(0,0,0,0.06)] border border-slate-200/90 p-6 sm:p-8 md:p-10 mb-16">
+          {/* Generator Input Card on White with Interactive Focus Aura */}
+          <div
+            style={{ animationDelay: "100ms" }}
+            className="animate-slide-up bg-white rounded-3xl shadow-[0_15px_45px_rgba(0,0,0,0.06)] hover:shadow-[0_20px_55px_rgba(0,102,255,0.11)] focus-within:border-blue-500 focus-within:shadow-[0_0_0_4px_rgba(0,102,255,0.12),0_20px_55px_rgba(0,102,255,0.14)] transition-all duration-300 border border-slate-200/90 p-6 sm:p-8 md:p-10 mb-16"
+          >
             <div className="mb-6">
               <h2 className="text-xl sm:text-2xl font-bold text-slate-900 mb-1.5 tracking-tight">
                 Describe Your Learning Goal
@@ -216,10 +229,10 @@ const HomePage = () => {
                   onClick={handleGenerate}
                   disabled={inputText.trim().length === 0 || isLoading}
                   className={`
-                    flex items-center justify-center gap-3 px-8 py-3.5 rounded-full font-semibold text-base transition-all duration-300 transform select-none cursor-pointer
+                    btn-tech-shimmer flex items-center justify-center gap-3 px-8 py-3.5 rounded-full font-semibold text-base transition-all duration-300 transform select-none cursor-pointer
                     ${
                       inputText.trim().length > 0 && !isLoading
-                        ? "bg-[#0066FF] text-white hover:bg-blue-700 hover:scale-[1.02] shadow-[0_4px_25px_rgba(0,102,255,0.35)] active:scale-95"
+                        ? "bg-[#0066FF] text-white hover:bg-blue-700 hover:scale-[1.03] hover:-translate-y-0.5 shadow-[0_4px_25px_rgba(0,102,255,0.38)] active:scale-95"
                         : "bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200"
                     }
                   `}
@@ -242,11 +255,14 @@ const HomePage = () => {
 
           {/* 3 Feature Cards */}
           <div className="grid md:grid-cols-3 gap-6 sm:gap-8">
-            <div className="group text-left p-7 sm:p-8 bg-white rounded-3xl border border-slate-200/90 shadow-[0_10px_30px_rgba(0,0,0,0.04)] hover:shadow-[0_15px_40px_rgba(0,102,255,0.1)] hover:border-blue-300 transition-all duration-300 hover:-translate-y-1">
-              <div className="w-13 h-13 bg-blue-50 border border-blue-200 rounded-2xl flex items-center justify-center mb-6 text-blue-600 shadow-xs group-hover:scale-105 transition-transform">
+            <div
+              style={{ animationDelay: "180ms" }}
+              className="tech-card-shine animate-slide-up group text-left p-7 sm:p-8 bg-white rounded-3xl border border-slate-200/90 shadow-[0_10px_30px_rgba(0,0,0,0.04)] hover:shadow-[0_20px_48px_rgba(0,102,255,0.15)] hover:border-blue-400 transition-all duration-300 ease-out hover:-translate-y-2 hover:scale-[1.015]"
+            >
+              <div className="w-13 h-13 bg-blue-50 border border-blue-200 rounded-2xl flex items-center justify-center mb-6 text-blue-600 shadow-xs group-hover:scale-110 group-hover:rotate-3 transition-transform duration-300">
                 <HiLightningBolt className="w-6 h-6 text-blue-600" />
               </div>
-              <h3 className="text-lg sm:text-xl font-bold text-slate-950 mb-2.5 tracking-tight">
+              <h3 className="text-lg sm:text-xl font-bold text-slate-950 mb-2.5 tracking-tight group-hover:text-blue-600 transition-colors">
                 Intelligent Fallback
               </h3>
               <p className="text-slate-600 leading-relaxed text-xs sm:text-sm">
@@ -254,11 +270,14 @@ const HomePage = () => {
               </p>
             </div>
 
-            <div className="group text-left p-7 sm:p-8 bg-white rounded-3xl border border-slate-200/90 shadow-[0_10px_30px_rgba(0,0,0,0.04)] hover:shadow-[0_15px_40px_rgba(0,102,255,0.1)] hover:border-blue-300 transition-all duration-300 hover:-translate-y-1">
-              <div className="w-13 h-13 bg-sky-50 border border-sky-200 rounded-2xl flex items-center justify-center mb-6 text-sky-600 shadow-xs group-hover:scale-105 transition-transform">
+            <div
+              style={{ animationDelay: "260ms" }}
+              className="tech-card-shine animate-slide-up group text-left p-7 sm:p-8 bg-white rounded-3xl border border-slate-200/90 shadow-[0_10px_30px_rgba(0,0,0,0.04)] hover:shadow-[0_20px_48px_rgba(0,102,255,0.15)] hover:border-blue-400 transition-all duration-300 ease-out hover:-translate-y-2 hover:scale-[1.015]"
+            >
+              <div className="w-13 h-13 bg-sky-50 border border-sky-200 rounded-2xl flex items-center justify-center mb-6 text-sky-600 shadow-xs group-hover:scale-110 group-hover:rotate-3 transition-transform duration-300">
                 <IoReorderFour className="w-6 h-6 text-sky-600" />
               </div>
-              <h3 className="text-lg sm:text-xl font-bold text-slate-950 mb-2.5 tracking-tight">
+              <h3 className="text-lg sm:text-xl font-bold text-slate-950 mb-2.5 tracking-tight group-hover:text-blue-600 transition-colors">
                 Structured & Visual
               </h3>
               <p className="text-slate-600 leading-relaxed text-xs sm:text-sm">
@@ -266,11 +285,14 @@ const HomePage = () => {
               </p>
             </div>
 
-            <div className="group text-left p-7 sm:p-8 bg-white rounded-3xl border border-slate-200/90 shadow-[0_10px_30px_rgba(0,0,0,0.04)] hover:shadow-[0_15px_40px_rgba(0,102,255,0.1)] hover:border-blue-300 transition-all duration-300 hover:-translate-y-1">
-              <div className="w-13 h-13 bg-emerald-50 border border-emerald-200 rounded-2xl flex items-center justify-center mb-6 text-emerald-600 shadow-xs group-hover:scale-105 transition-transform">
+            <div
+              style={{ animationDelay: "340ms" }}
+              className="tech-card-shine animate-slide-up group text-left p-7 sm:p-8 bg-white rounded-3xl border border-slate-200/90 shadow-[0_10px_30px_rgba(0,0,0,0.04)] hover:shadow-[0_20px_48px_rgba(0,102,255,0.15)] hover:border-blue-400 transition-all duration-300 ease-out hover:-translate-y-2 hover:scale-[1.015]"
+            >
+              <div className="w-13 h-13 bg-emerald-50 border border-emerald-200 rounded-2xl flex items-center justify-center mb-6 text-emerald-600 shadow-xs group-hover:scale-110 group-hover:rotate-3 transition-transform duration-300">
                 <FaStar className="w-6 h-6 text-emerald-600" />
               </div>
-              <h3 className="text-lg sm:text-xl font-bold text-slate-950 mb-2.5 tracking-tight">
+              <h3 className="text-lg sm:text-xl font-bold text-slate-950 mb-2.5 tracking-tight group-hover:text-blue-600 transition-colors">
                 Interactive Tutor
               </h3>
               <p className="text-slate-600 leading-relaxed text-xs sm:text-sm">

@@ -173,12 +173,13 @@ const MyRoadmaps = () => {
           </div>
         ) : (
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {roadmaps.map((roadmap) => {
+            {roadmaps.map((roadmap, idx) => {
               const parsedData = typeof roadmap.data === "string" ? JSON.parse(roadmap.data) : roadmap.data;
               return (
                 <div
                   key={roadmap.$id}
-                  className="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200/90 hover:border-blue-500 shadow-[0_10px_30px_rgba(0,0,0,0.04)] hover:shadow-[0_15px_40px_rgba(0,102,255,0.12)] transition-all duration-300 hover:-translate-y-1 cursor-pointer flex flex-col justify-between group relative"
+                  style={{ animationDelay: `${idx * 75}ms` }}
+                  className="tech-card-shine animate-slide-up bg-white rounded-3xl p-6 sm:p-7 border border-slate-200/90 hover:border-blue-500 shadow-[0_10px_30px_rgba(0,0,0,0.04)] hover:shadow-[0_18px_45px_rgba(0,102,255,0.16)] transition-all duration-300 ease-out hover:-translate-y-2 hover:scale-[1.015] active:scale-[0.99] cursor-pointer flex flex-col justify-between group relative"
                   onClick={() => navigate(`/roadmap/${roadmap.$id}`)}
                 >
                   <div className="mb-4">
@@ -192,7 +193,7 @@ const MyRoadmaps = () => {
                         type="button"
                         onClick={(e) => handleDeleteRoadmap(roadmap.$id, e)}
                         title="Delete this roadmap"
-                        className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all border border-transparent hover:border-rose-200 flex-shrink-0 cursor-pointer"
+                        className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 hover:scale-110 active:scale-95 rounded-xl transition-all duration-200 border border-transparent hover:border-rose-200 flex-shrink-0 cursor-pointer"
                       >
                         <FaTrashAlt className="w-3.5 h-3.5" />
                       </button>

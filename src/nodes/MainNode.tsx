@@ -19,11 +19,12 @@ const MainNode = ({ data }: MainNodeProps) => {
   return (
     <div className="relative group">
       {/* Enlarged Phase Milestone Card */}
-      <div className="w-[380px] px-7 py-6 bg-white text-slate-900 shadow-xl rounded-3xl border-2 border-[#0066FF] hover:shadow-2xl transition-all duration-300">
+      <div className="tech-card-shine w-[380px] px-7 py-6 bg-white text-slate-900 shadow-xl rounded-3xl border-2 border-[#0066FF] hover:-translate-y-1.5 hover:scale-[1.02] hover:shadow-[0_18px_42px_rgba(0,102,255,0.22)] transition-all duration-300 ease-out">
         {/* Header Bar */}
         <div className="flex items-center justify-between gap-2 mb-3.5 pb-3 border-b border-slate-100">
           <div className="flex items-center gap-2">
-            <span className="text-xs font-black uppercase tracking-wider bg-[#0066FF] text-white px-3.5 py-1 rounded-full shadow-sm">
+            <span className="inline-flex items-center gap-1.5 text-xs font-black uppercase tracking-wider bg-[#0066FF] text-white px-3.5 py-1 rounded-full shadow-sm">
+              <span className="w-1.5 h-1.5 rounded-full bg-sky-200 animate-pulse"></span>
               {data.order ? `Phase ${data.order}` : "Milestone"}
             </span>
           </div>

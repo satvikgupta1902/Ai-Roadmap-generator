@@ -20,13 +20,14 @@ const InputNode = ({ data }: InputNodeProps) => {
   return (
     <div className="relative group">
       {/* Enlarged Start Goal Card */}
-      <div className="w-[420px] px-8 py-6 bg-white text-slate-900 shadow-xl rounded-3xl border-2 border-emerald-500 transition-all duration-300 hover:shadow-2xl hover:border-emerald-600">
+      <div className="tech-card-shine w-[420px] px-8 py-6 bg-white text-slate-900 shadow-xl rounded-3xl border-2 border-emerald-500 transition-all duration-300 ease-out hover:-translate-y-1.5 hover:scale-[1.02] hover:shadow-[0_18px_42px_rgba(16,185,129,0.22)] hover:border-emerald-600">
         <div className="flex items-center justify-between gap-3 mb-3 pb-3 border-b border-slate-100">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center justify-center">
+            <div className="w-8 h-8 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
               <FaFlagCheckered className="w-4 h-4 text-emerald-600" />
             </div>
-            <span className="text-xs font-black uppercase tracking-wider text-emerald-700">
+            <span className="inline-flex items-center gap-1.5 text-xs font-black uppercase tracking-wider text-emerald-700">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
               Start Point
             </span>
           </div>

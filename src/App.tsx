@@ -85,8 +85,8 @@ const OverviewFlow = () => {
       const mainNodeId = `main-node-${mainIndex + 1}`;
       const isRightSide = mainIndex % 2 === 0; // alternate right and left branches for balanced diagram
       const subtopicCount = mainTopic.subtopics.length;
-      // Vertical spacing between subtopics inside a phase
-      const subtopicSpacingY = 260;
+      // Generous vertical spacing between Step cards so any 2 step cards always have crisp separation
+      const subtopicSpacingY = 320;
 
       // Main Milestone Node vertically centered alongside its subtopics
       const mainNodeY =
@@ -174,11 +174,11 @@ const OverviewFlow = () => {
         });
       });
 
-      // Advance Y position with 30% more reduction between phases
+      // Advance Y position with compact spacing between phases
       const phaseHeight =
         subtopicCount > 1
           ? (subtopicCount - 1) * subtopicSpacingY + 140
-          : 155;
+          : 225;
       currentY += phaseHeight + 35;
     });
 
@@ -371,7 +371,8 @@ const OverviewFlow = () => {
               {data.nodes.map((node, index) => (
                 <div
                   key={index}
-                  className="p-4 rounded-2xl transition-all border border-slate-200 bg-slate-50/70 hover:bg-white hover:border-blue-300 hover:shadow-xs shadow-xs"
+                  style={{ animationDelay: `${index * 60}ms` }}
+                  className="animate-slide-up p-4 rounded-2xl transition-all duration-300 border border-slate-200 bg-slate-50/70 hover:bg-white hover:border-blue-400 hover:shadow-md hover:-translate-y-0.5 shadow-xs"
                 >
                   <div className="flex items-start justify-between mb-2">
                     <div className="font-bold text-sm text-slate-900 leading-tight">
